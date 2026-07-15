@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FocusEvent, type ReactNode } from 'react'
 import { ArrowRight, BookOpen, Boxes, CheckCircle2, ChevronDown, Cloud, Code2, ExternalLink, FileText, Github, Landmark, Menu, Moon, Rocket, Search, ShieldCheck, Sun, Terminal, Workflow, X } from 'lucide-react'
 import { legacyPages } from './data/legacyPages'
 import { publications } from './data/publications'
@@ -7,13 +7,18 @@ import { TableauEmbed } from './components/TableauEmbed'
 import { BudgetLawPaper } from './pages/BudgetLawPaper'
 import { LegalFrameworkPage } from './pages/LegalFrameworkPage'
 import { A11Section20Page } from './pages/A11Section20Page'
+import { DodFmrGlossaryPage } from './pages/DodFmrGlossaryPage'
+import { ProcessEnhancement, ProcessReferenceIntro } from './components/ProcessEnhancement'
+import { PortfolioOverview, PortfolioProjectBrief } from './components/PortfolioExperience'
+import { isProcessRoute } from './data/processJourney'
+import { portfolioProjectByRoute } from './data/portfolioProjects'
 import { normalizeRoute } from './lib/routing'
 
 const navItems = [
   { label: 'Budget Process', route: '/process', children: [['Overview', '/process'], ['Formulation', '/formulation'], ['Enactment', '/enactment'], ['Execution', '/execution']] },
   { label: 'Legislative Framework', route: '/policy' },
   { label: 'Portfolio', route: '/portfolio-1-col' },
-  { label: 'Knowledge', route: '/knowledge', children: [['Publications', '/knowledge'], ['A-11 · Section 20', '/knowledge/a-11/section-20'], ['Build & Publish', '/build-and-publish']] },
+  { label: 'Knowledge', route: '/knowledge', children: [['Publications', '/knowledge'], ['A-11 · Section 20', '/knowledge/a-11/section-20'], ['DoD FMR Glossary', '/knowledge/dod-fmr/glossary'], ['Build & Publish', '/build-and-publish']] },
   { label: 'About', route: '/about' },
 ]
 
@@ -29,25 +34,49 @@ type Theme = 'dark' | 'light'
 
 function Header({ onSearch, theme, onThemeChange }: { onSearch: () => void; theme: Theme; onThemeChange: () => void }) {
   const [open, setOpen] = useState(false)
-  return <header className="site-header">
+  const [activeMenu, setActiveMenu] = useState<string | null>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const closeNavigation = () => { setOpen(false); setActiveMenu(null) }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeNavigation() }
+    const onPointerDown = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) closeNavigation()
+    }
+    const onRouteChange = () => closeNavigation()
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('popstate', onRouteChange)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('popstate', onRouteChange)
+    }
+  }, [])
+
+  const leaveGroup = (event: FocusEvent<HTMLDivElement>, route: string) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node)) setActiveMenu((current) => current === route ? null : current)
+  }
+
+  return <header className="site-header" ref={headerRef}>
     <div className="nav-shell">
-      <a className="brand" href="/" onClick={(event) => { event.preventDefault(); navigate('/'); setOpen(false) }}>
+      <a className="brand" href="/" onClick={(event) => { event.preventDefault(); closeNavigation(); navigate('/') }}>
         <span className="brand-mark"><Landmark size={22} /></span>
         <span><strong>Budget Matter</strong><small>How the federal budget works</small></span>
       </a>
       <nav className={open ? 'main-nav is-open' : 'main-nav'} aria-label="Primary navigation">
-        {navItems.map((item) => <div className="nav-group" key={item.route}>
-          <a href={item.route} onClick={(event) => { event.preventDefault(); navigate(item.route); setOpen(false) }}>{item.label}{item.children && <ChevronDown size={14} />}</a>
-          {item.children && <div className="nav-menu">{item.children.map(([label, route]) => <a key={route} href={route} onClick={(event) => { event.preventDefault(); navigate(route); setOpen(false) }}>{label}</a>)}</div>}
+        {navItems.map((item) => <div className={`nav-group${activeMenu === item.route ? ' is-menu-open' : ''}`} key={item.route} onMouseEnter={() => item.children && setActiveMenu(item.route)} onMouseLeave={() => item.children && setActiveMenu(null)} onBlur={(event) => leaveGroup(event, item.route)}>
+          <a href={item.route} aria-haspopup={item.children ? 'menu' : undefined} aria-expanded={item.children ? open || activeMenu === item.route : undefined} onFocus={() => item.children && setActiveMenu(item.route)} onClick={(event) => { event.preventDefault(); closeNavigation(); navigate(item.route) }}>{item.label}{item.children && <ChevronDown size={14} />}</a>
+          {item.children && <div className="nav-menu" role="menu" aria-hidden={!open && activeMenu !== item.route}>{item.children.map(([label, route]) => <a role="menuitem" key={route} href={route} onClick={(event) => { event.preventDefault(); closeNavigation(); navigate(route) }}>{label}</a>)}</div>}
         </div>)}
-        <button className="search-button mobile-search" onClick={onSearch}><Search size={18} /> Search</button>
+        <button className="search-button mobile-search" onClick={() => { closeNavigation(); onSearch() }}><Search size={18} /> Search</button>
       </nav>
       <div className="header-actions">
         <button className="theme-button" onClick={onThemeChange} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} aria-pressed={theme === 'light'} title={`Use ${theme === 'dark' ? 'light' : 'dark'} mode`}>
           {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
         </button>
-        <button className="search-button" onClick={onSearch} aria-label="Search Budget Matter"><Search size={19} /></button>
-        <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Toggle navigation">{open ? <X /> : <Menu />}</button>
+        <button className="search-button" onClick={() => { closeNavigation(); onSearch() }} aria-label="Search Budget Matter"><Search size={19} /></button>
+        <button className="menu-button" onClick={() => { setActiveMenu(null); setOpen(!open) }} aria-label="Toggle navigation" aria-expanded={open}>{open ? <X /> : <Menu />}</button>
       </div>
     </div>
   </header>
@@ -169,9 +198,36 @@ function BuildAndPublishPage() {
 function ContentPage({ route }: { route: string }) {
   const page = legacyPages.find((item) => normalizeRoute(item.route) === route)
   const tableauProject = tableauProjects[route]
+  const portfolioProject = portfolioProjectByRoute[route]
   useEffect(() => {
-    if (route !== '/knowledge' && route !== '/build-and-publish' && route !== '/knowledge/federal-budget-laws' && route !== '/knowledge/a-11/section-20' && route !== '/policy') document.title = `${page?.title || 'Page not found'} | Budget Matter`
+    if (route !== '/knowledge' && route !== '/build-and-publish' && route !== '/knowledge/federal-budget-laws' && route !== '/knowledge/a-11/section-20' && route !== '/knowledge/dod-fmr/glossary' && route !== '/policy') document.title = `${page?.title || 'Page not found'} | Budget Matter`
     const root = document.querySelector('.legacy-content')
+    if (root && isProcessRoute(route)) {
+      root.querySelectorAll('img').forEach((image, index) => {
+        image.classList.add('process-visual')
+        image.setAttribute('loading', 'lazy')
+        image.setAttribute('decoding', 'async')
+        const visualLink = image.closest('a')
+        const visualContainer = visualLink || (image.parentElement?.textContent?.trim() === '' ? image.parentElement : null)
+        visualContainer?.classList.add('process-visual-link')
+        const captionElement = visualContainer?.previousElementSibling
+        const candidateCaption = captionElement?.textContent?.replace(/\s+/g, ' ').trim()
+        if (candidateCaption && /^(?:chart|figure|exhibit|diagram|map)\b/i.test(candidateCaption)) {
+          captionElement?.classList.add('process-visual-caption')
+          if (!image.alt || image.alt === 'Budget Matter visual') image.alt = candidateCaption
+        } else if (!image.alt || image.alt === 'Budget Matter visual') {
+          image.alt = `${page?.title || 'Federal budget process'} visual ${index + 1}`
+        }
+      })
+    }
+    if (root && portfolioProject) {
+      root.querySelectorAll('img').forEach((image, index) => {
+        image.classList.add('portfolio-detail-visual')
+        image.setAttribute('loading', 'lazy')
+        image.setAttribute('decoding', 'async')
+        if (!image.alt || image.alt === 'Budget Matter visual') image.alt = `${portfolioProject.title} visual ${index + 1}`
+      })
+    }
     const onClick = (event: Event) => {
       const anchor = (event.target as HTMLElement).closest('a')
       if (!anchor || anchor.target === '_blank' || anchor.origin !== window.location.origin || anchor.pathname.startsWith('/assets/')) return
@@ -179,22 +235,26 @@ function ContentPage({ route }: { route: string }) {
     }
     root?.addEventListener('click', onClick)
     return () => root?.removeEventListener('click', onClick)
-  }, [page, route])
+  }, [page, portfolioProject, route])
 
   if (route === '/knowledge') return <KnowledgePage />
   if (route === '/build-and-publish') return <BuildAndPublishPage />
   if (route === '/knowledge/federal-budget-laws') return <BudgetLawPaper onNavigate={navigate} />
   if (route === '/knowledge/a-11/section-20') return <A11Section20Page onNavigate={navigate} />
+  if (route === '/knowledge/dod-fmr/glossary') return <DodFmrGlossaryPage onNavigate={navigate} />
   if (route === '/policy') return <LegalFrameworkPage onNavigate={navigate} />
+  if (route === '/portfolio-1-col') return <main><PageHero title="Project Portfolio" route={route} description="Practical analytics, automation, budgeting, and visualization projects designed to turn complex information into useful decisions." /><PortfolioOverview onNavigate={navigate} /></main>
   if (!page) return <main><PageHero title="Page not found" route={route} description="The page you requested is not part of this guide." /><div className="not-found"><BookOpen /><h2>Let’s get you back on track.</h2><button onClick={() => navigate('/')}>Return home</button></div></main>
-  const pageClass = route === '/about' ? 'content-shell legacy-content about-page' : 'content-shell legacy-content'
+  const pageClass = route === '/about' ? 'content-shell legacy-content about-page' : `content-shell legacy-content${isProcessRoute(route) ? ' process-content' : ''}`
   if (tableauProject) {
     const placeholder = /<div class="tableauPlaceholder"[^>]*>[\s\S]*?<\/object><\/div>/i
     const match = placeholder.exec(page.html)
     const before = match ? page.html.slice(0, match.index) : page.html
     const after = match ? page.html.slice(match.index + match[0].length) : ''
-    return <main><PageHero title={page.title} route={route} description={page.description} /><article className={`${pageClass} tableau-page`}><div className="legacy-fragment" dangerouslySetInnerHTML={{ __html: before }} /><TableauEmbed project={tableauProject} /><div className="legacy-fragment" dangerouslySetInnerHTML={{ __html: after }} /></article></main>
+    return <main><PageHero title={portfolioProject?.title || page.title} route={route} description={portfolioProject?.summary || page.description} />{portfolioProject && <PortfolioProjectBrief project={portfolioProject} onNavigate={navigate} />}<article className={`${pageClass} tableau-page portfolio-detail-content`}><div className="legacy-fragment" dangerouslySetInnerHTML={{ __html: before }} /><TableauEmbed project={tableauProject} /><div className="legacy-fragment" dangerouslySetInnerHTML={{ __html: after }} /></article></main>
   }
+  if (isProcessRoute(route)) return <main><PageHero title={page.title} route={route} description={page.description} /><PhaseTrail route={route} /><ProcessEnhancement route={route} onNavigate={navigate} /><article className={pageClass}><ProcessReferenceIntro route={route} /><div className="process-source-material" dangerouslySetInnerHTML={{ __html: page.html }} /></article></main>
+  if (portfolioProject) return <main><PageHero title={portfolioProject.title} route={route} description={portfolioProject.summary} /><PortfolioProjectBrief project={portfolioProject} onNavigate={navigate} /><article className={`${pageClass} portfolio-detail-content`} dangerouslySetInnerHTML={{ __html: page.html }} /></main>
   return <main><PageHero title={page.title} route={route} description={route === '/about' ? aboutDescription : page.description} /><PhaseTrail route={route} /><article className={pageClass} dangerouslySetInnerHTML={{ __html: page.html }} /></main>
 }
 

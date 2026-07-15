@@ -83,6 +83,26 @@ describe('Budget Matter application', () => {
     expect(window.location.pathname).toBe('/')
   })
 
+  it('dismisses every desktop dropdown immediately after a selection', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const processMenu = screen.getByRole('link', { name: 'Budget Process' })
+    await user.hover(processMenu)
+    expect(processMenu).toHaveAttribute('aria-expanded', 'true')
+    await user.click(screen.getByRole('menuitem', { name: 'Overview' }))
+
+    expect(window.location.pathname).toBe('/process')
+    expect(processMenu).toHaveAttribute('aria-expanded', 'false')
+    expect(processMenu.closest('.nav-group')).not.toHaveClass('is-menu-open')
+
+    const knowledgeMenu = screen.getAllByRole('link', { name: 'Knowledge' })[0]
+    await user.hover(knowledgeMenu)
+    expect(knowledgeMenu).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(knowledgeMenu).toHaveAttribute('aria-expanded', 'false')
+  })
+
   it('closes search with Escape and navigates legacy content links', async () => {
     const user = userEvent.setup()
     window.history.replaceState({}, '', '/f1_planning.html')
@@ -168,6 +188,24 @@ describe('Budget Matter application', () => {
     expect(document.title).toMatch(/Section 20/)
   })
 
+  it('publishes the complete searchable DoD FMR glossary', async () => {
+    window.history.replaceState({}, '', '/knowledge/dod-fmr/glossary')
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: /financial management regulation glossary/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Publication summary')).toHaveTextContent(/224defined terms/i)
+    expect(screen.getAllByText(/224 definitions/i).length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: 'Accessorial Charges' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Year-end Adjustments for Reimbursements' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /open the complete 36-page pdf/i })).toHaveAttribute('href', '/assets/publications/dod-fmr-glossary-january-2024.pdf')
+
+    await user.type(screen.getByPlaceholderText(/search terms and definitions/i), 'year-end adjustments')
+    expect(document.querySelector('.dod-fmr-toolbar > p')).toHaveTextContent('1 definition shown')
+    expect(screen.queryByRole('heading', { name: 'Accessorial Charges' })).not.toBeInTheDocument()
+    expect(document.title).toMatch(/DoD FMR Glossary/)
+  })
+
   it('presents a current visual legal framework at the policy route', () => {
     window.history.replaceState({}, '', '/policy')
     render(<App />)
@@ -196,6 +234,46 @@ describe('Budget Matter application', () => {
     expect(screen.getAllByTestId('deployment-step')).toHaveLength(8)
     await user.click(screen.getByRole('link', { name: /open the knowledge hub/i }))
     expect(window.location.pathname).toBe('/knowledge')
+  })
+
+  it('enhances every budget-process step without removing legacy visuals', () => {
+    window.history.replaceState({}, '', '/f1_planning')
+    render(<App />)
+
+    expect(screen.getByRole('region', { name: /federal budget process map/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /one cycle.*twenty-two connected decisions/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /inputs become accountable outputs/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /what good looks like/i })).toBeInTheDocument()
+    expect(screen.queryByText(/Original Budget Matter content continues below/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /strategic planning: detailed guidance and visuals/i })).toBeInTheDocument()
+    expect(screen.getByText(/decision focus/i)).toBeInTheDocument()
+    expect(document.querySelectorAll('.legacy-content img').length).toBeGreaterThan(0)
+    expect(document.querySelector('.legacy-content img')).toHaveClass('process-visual')
+    expect(document.querySelector('.legacy-content img')).toHaveAttribute('loading', 'lazy')
+  })
+
+  it('presents the complete portfolio as capability and impact stories', async () => {
+    window.history.replaceState({}, '', '/portfolio-1-col')
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: /projects built to turn complex data into decisions/i })).toBeInTheDocument()
+    expect(screen.getAllByText(/why it matters/i).length).toBeGreaterThanOrEqual(15)
+    expect(screen.getAllByRole('button', { name: /explore project/i })).toHaveLength(15)
+    await user.click(screen.getByRole('button', { name: /analytics & ai/i }))
+    expect(screen.getByRole('heading', { name: /machine learning for world happiness drivers/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /federal budget spend plan model/i })).not.toBeInTheDocument()
+  })
+
+  it('adds an outcome and capability brief to every project detail route', () => {
+    window.history.replaceState({}, '', '/project7/project7')
+    render(<App />)
+
+    expect(screen.getAllByRole('heading', { name: /federal budget spend plan model/i }).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText(/demonstrated outcome/i)).toBeInTheDocument()
+    expect(screen.getByText(/capabilities demonstrated/i)).toBeInTheDocument()
+    expect(screen.getByText(/scenario modeling and self-balancing controls/i)).toBeInTheDocument()
+    expect(document.querySelector('.portfolio-detail-content img')).toHaveClass('portfolio-detail-visual')
   })
 
   it.each([

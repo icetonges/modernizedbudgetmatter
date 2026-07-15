@@ -9,6 +9,7 @@ export type Publication = {
 
 // Add a new object here to publish another item in the Knowledge hub.
 export const publications: Publication[] = [
+  { title: 'DoD FMR Glossary', summary: 'The complete January 2024 DoD 7000.14-R glossary, rebuilt as a searchable A–Z reference with all 224 official definitions and source-page citations.', route: '/knowledge/dod-fmr/glossary', category: 'Reference', readingTime: '30 min', featured: true },
   { title: 'A-11 · Section 20 — Terms and Concepts', summary: 'A visual, searchable reference to the Federal budget vocabulary and budget-authority concepts defined in OMB Circular A-11 Section 20.', route: '/knowledge/a-11/section-20', category: 'Reference', readingTime: '20 min', featured: true },
   { title: 'Federal Budget and Appropriations Law', summary: 'An in-depth professional introduction to the constitutional framework, core statutes, execution controls, historical cases, and real-world appropriation decisions.', route: '/knowledge/federal-budget-laws', category: 'Reference', readingTime: '25 min', featured: true },
   { title: 'Website Transformation and AI Studio Publishing', summary: 'The production blueprint used to modernize Budget Matter and publish it at a custom ai.studio address.', route: '/build-and-publish', category: 'Engineering', readingTime: '12 min', featured: true },
