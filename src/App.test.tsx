@@ -36,7 +36,7 @@ describe('Budget Matter application', () => {
   it('uses the dedicated About-page layout', () => {
     window.history.replaceState({}, '', '/about')
     render(<App />)
-    const article = document.querySelector('.legacy-content')
+    const article = document.querySelector('.reference-content')
     expect(article).toHaveClass('about-page')
     expect(article?.querySelector('.row')).toBeInTheDocument()
     expect(screen.getByText(/computer programming background/i)).toBeInTheDocument()
@@ -48,7 +48,15 @@ describe('Budget Matter application', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: /follow every dollar/i })).toBeInTheDocument()
-    expect(screen.getByText('22')).toBeInTheDocument()
+    expect(screen.getAllByText('22').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByRole('heading', { name: /four ways to understand and use the federal budget/i })).toBeInTheDocument()
+    expect(screen.getAllByTestId('home-pathway')).toHaveLength(4)
+    expect(screen.getByRole('heading', { name: /from public-finance challenge to working solution/i })).toBeInTheDocument()
+    expect(screen.getAllByTestId('home-project')).toHaveLength(3)
+    expect(screen.getByRole('heading', { name: /keep the reference material close/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /explore the complete knowledge library/i })).toHaveAttribute('href', '/knowledge')
+    expect(screen.getByRole('link', { name: /open the dod fmr glossary/i })).toHaveAttribute('href', '/knowledge/dod-fmr/glossary')
+    expect(screen.queryByRole('heading', { name: 'Personal Projects' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: /explore the process/i }))
 
     await waitFor(() => expect(window.location.pathname).toBe('/process'))
@@ -113,7 +121,7 @@ describe('Budget Matter application', () => {
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    const link = document.querySelector('.legacy-content a[href="/formulation"]') as HTMLAnchorElement
+    const link = document.querySelector('.reference-content a[href="/formulation"]') as HTMLAnchorElement
     expect(link).toBeTruthy()
     await user.click(link)
     expect(window.location.pathname).toBe('/formulation')
@@ -247,9 +255,9 @@ describe('Budget Matter application', () => {
     expect(screen.queryByText(/Original Budget Matter content continues below/i)).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /strategic planning: detailed guidance and visuals/i })).toBeInTheDocument()
     expect(screen.getByText(/decision focus/i)).toBeInTheDocument()
-    expect(document.querySelectorAll('.legacy-content img').length).toBeGreaterThan(0)
-    expect(document.querySelector('.legacy-content img')).toHaveClass('process-visual')
-    expect(document.querySelector('.legacy-content img')).toHaveAttribute('loading', 'lazy')
+    expect(document.querySelectorAll('.reference-content img').length).toBeGreaterThan(0)
+    expect(document.querySelector('.reference-content img')).toHaveClass('process-visual')
+    expect(document.querySelector('.reference-content img')).toHaveAttribute('loading', 'lazy')
   })
 
   it('presents the complete portfolio as capability and impact stories', async () => {

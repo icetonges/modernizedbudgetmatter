@@ -1,32 +1,33 @@
 # Budget Matter
 
-A modern React + TypeScript + Vite + Tailwind CSS migration of the original Budget Matter educational website. The application preserves all original page content and legacy `.html` URLs while replacing the Bootstrap/jQuery runtime with a responsive, accessible React shell.
+Budget Matter is the production React, TypeScript, Vite, and Node application behind [budgetmatter.ai.studio](https://budgetmatter.ai.studio). It explains the federal budget process through maintained page data, interactive process maps, professional references, and project case studies.
 
 ## Local development
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
 Production verification:
 
 ```bash
+npm run lint
 npm test
 npm run test:coverage
-npm run lint
 npm run build
 npm start
 ```
 
-## Content migration
+## Source architecture
 
-The original pages are retained in `legacy-html/`. `npm run generate:content` extracts their page content into typed React data, rewrites internal links, and copies referenced assets into `public/assets/`. This makes the migration reproducible while preserving all 50 original routes.
+- `src/` contains the application, reusable visual components, tests, and maintained page data.
+- `public/assets/` contains the images and publications referenced by the application.
+- `server-app.mjs` serves the optimized Vite build and supports client-side deep links.
+- `project.toml` selects the Node.js runtime used by Google Cloud Build and Cloud Run.
 
-## Google AI Studio / Cloud Run
+The original static HTML, Bootstrap/JQuery runtime, Jekyll build, duplicate asset trees, and build-time HTML extraction layer have been retired. The migrated content is maintained directly in `src/data/sitePages.ts`; clean installs and production builds no longer depend on the historical website archive.
 
-The project uses the default Google AI Studio web-app architecture: React on the client and a Node.js server for production. `npm run build` creates `dist/`; `npm start` serves it on `0.0.0.0` using the `PORT` environment variable supplied by Cloud Run.
+## Deployment
 
-AI Studio currently supports exporting generated apps to GitHub or ZIP, but does not import an existing local app into Build mode. To continue in AI Studio, create a Build-mode app and add this repository/ZIP contents to its code workspace when import support is available; today, deploy this repository directly to Cloud Run or another Node-compatible host.
-
-The included `project.toml` explicitly selects the Node.js runtime. This is required because the preserved legacy archive contains a historical PHP contact handler that can otherwise cause automatic buildpack detection to select PHP.
+Cloud Run builds the repository with Node.js, runs `npm run build`, and starts `server.mjs` on the platform-provided `PORT`. The custom Google AI Studio domain routes to the latest healthy Cloud Run revision.

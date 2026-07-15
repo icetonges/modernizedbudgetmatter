@@ -7,17 +7,15 @@
     "node": "24.x"
   },
   "scripts": {
-    "generate:content": "node scripts/generate-content.mjs",
-    "dev": "npm run generate:content && vite --configLoader runner",
-    "build": "npm run generate:content && tsc -b && vite build --configLoader runner",
+    "dev": "vite --configLoader runner",
+    "build": "tsc -b && vite build --configLoader runner",
     "start": "node server.mjs",
-    "test": "npm run generate:content && vitest run --configLoader runner",
-    "test:coverage": "npm run generate:content && vitest run --coverage --configLoader runner",
+    "test": "vitest run --configLoader runner",
+    "test:coverage": "vitest run --coverage --configLoader runner",
     "lint": "eslint ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
-    "cheerio": "^1.1.2",
     "express": "^5.1.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
