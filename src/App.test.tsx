@@ -266,8 +266,8 @@ describe('Budget Matter application', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: /projects built to turn complex data into decisions/i })).toBeInTheDocument()
-    expect(screen.getAllByText(/why it matters/i).length).toBeGreaterThanOrEqual(15)
-    expect(screen.getAllByRole('button', { name: /explore project/i })).toHaveLength(15)
+    expect(screen.getAllByText(/why it matters/i).length).toBeGreaterThanOrEqual(24)
+    expect(screen.getAllByRole('button', { name: /explore project/i })).toHaveLength(24)
     await user.click(screen.getByRole('button', { name: /analytics & ai/i }))
     expect(screen.getByRole('heading', { name: /machine learning for world happiness drivers/i })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /federal budget spend plan model/i })).not.toBeInTheDocument()

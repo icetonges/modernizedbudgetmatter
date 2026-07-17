@@ -3,9 +3,9 @@ import { portfolioProjectByRoute, portfolioProjects } from './portfolioProjects'
 
 describe('portfolio project catalog', () => {
   it('describes every portfolio project with actionable capability and impact content', () => {
-    expect(portfolioProjects).toHaveLength(15)
-    expect(new Set(portfolioProjects.map((project) => project.route)).size).toBe(15)
-    expect(Object.keys(portfolioProjectByRoute)).toHaveLength(15)
+    expect(portfolioProjects).toHaveLength(24)
+    expect(new Set(portfolioProjects.map((project) => project.route)).size).toBe(24)
+    expect(Object.keys(portfolioProjectByRoute)).toHaveLength(24)
     portfolioProjects.forEach((project) => {
       expect(project.summary.length).toBeGreaterThan(90)
       expect(project.outcome.length).toBeGreaterThan(70)
